@@ -1,0 +1,19 @@
+version: '3.3'
+services:
+      db:
+        image: postgres:10-alpine
+        environment:
+          - POSTGRES_DB=postgres
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=postgres
+
+      web:
+         build: .
+         command: python3 manage.py runserver 0.0.0.0:8990
+         volumes:
+            - .:/app
+         ports:
+            - "8990:8990"
+         depends_on:
+               - db
+                    
