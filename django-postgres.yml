@@ -1,0 +1,77 @@
+---
+  - name: "installing django and PostgreSQL application"
+    hosts: django
+    become: yes
+    vars:
+       group1: docker
+       user1: ec2-user
+    tasks:
+        - name: "inatlling python3 and pip package manager"
+          yum: name=python3,python-pip state=present
+
+        -  name: "installing docker python extension"
+           pip: name=docker-py
+
+        - name: "installing the  docker"
+          yum: name=docker state=present
+     
+        - name: "restarting the  docker services"
+          service: name=docker state=restarted enabled=yes
+        
+        - name: "add or check the group docker"
+          group:
+              name: "{{group1}}"
+              state: present 
+
+        - name: "add the user ec2-user to the group docker"
+          user: 
+            name: "{{user1}}"
+            shell: /bin/bash
+            groups: "{{group1}}"
+            append: yes
+ 
+        - name: "Download and install Docker Compose"
+          get_url:
+                url: https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-x86_64
+                dest: /usr/local/bin/docker-compose
+                mode: 'u+x,g+x'
+ 
+        - name: "copying the dcoker file and docker compose,requiret.xt "
+          copy: src={{ item }}  dest=/root/djangoproject/classic/
+          with_items:
+                  -  docker-compose.yml
+                  -  requirements.txt
+                  -  Dockerfile  
+          register: output
+        - name: "run the docker-compose" 
+          shell: docker-compose run web django-admin startproject composeexample .
+          args:
+             chdir: /root/djangoproject/classic/   
+          when: output.changed == true
+        
+        - name: "updateing the settngs.py"
+          replace:
+                path: /root/djangoproject/classic/composeexample/settings.py
+                regexp: '^(DATABASES\s\=\s\{([^\n]*\n+)+\})$'
+                replace: "DATABASES = {
+                                'default': {
+                                     'ENGINE': 'django.db.backends.postgresql',
+                                     'NAME': 'postgres',
+                                      'USER': 'postgres',
+                                      'PASSWORD': 'postgres',
+                                      'HOST': 'db',
+                                       'PORT': 5432,
+                                }"
+
+        - name: "update the Allow IP address in settings.py"
+          replace:
+            path:  /root/djangoproject/classic/composeexample/settings.py
+            regexp: '^(ALLOWED_HOSTS\s.*\])$'
+            replace: 'ALLOWED_HOSTS = ["*"]'
+
+        - name: "run docker compose up"
+          shell: docker-compose up
+          args:
+              chdir: /root/djangoproject/classic/composeexample/
+
+  
