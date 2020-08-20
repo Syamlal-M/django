@@ -43,7 +43,7 @@
                   -  requirements.txt
                   -  Dockerfile  
           register: output
-        - name: "run the docker-compose" 
+        - name: "run the docker-compose"  //either you canuse the shell module or docker_compose module to deploy  the docker
           shell: docker-compose run web django-admin startproject composeexample .
           args:
              chdir: /root/djangoproject/classic/   
